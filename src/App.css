@@ -1,0 +1,168 @@
+/* --- Appleのシステム全体に馴染む基本設定 --- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background-color: #F2F2F7; /* iOS標準の背景色 */
+  color: #000000;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* アプリ全体のコンテナ（スマホの画面幅に綺麗に収める） */
+.app-container {
+  max-width: 430px; /* iPhone Pro Maxの幅に最適化 */
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: #F2F2F7;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* メインコンテンツ表示エリア */
+.content-area {
+  flex: 1;
+  padding: 20px 16px 100px 16px; /* 下部ナビに被らないように余白を確保 */
+  overflow-y: auto;
+}
+
+/* タイトル（iOS風の大きなタイトル） */
+h2 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  letter-spacing: -0.5px;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 25px;
+  margin-bottom: 12px;
+}
+
+/* --- Apple風カードデザイン（集計ボックスやメモ） --- */
+.summary-box, .wishlist-section ul li, form, .settings-screen div, .graph-screen > div {
+  background-color: #FFFFFF !important;
+  border-radius: 12px !important; /* iOS特有の綺麗な角丸 */
+  padding: 16px !important;
+  margin-bottom: 16px !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important; /* ごく僅かな影 */
+}
+
+/* マネー表示のテキストスタイル */
+.summary-box p {
+  margin: 8px 0;
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.summary-box h3 {
+  font-size: 22px;
+  margin-top: 12px;
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* --- 入力フォーム・セレクトボックス --- */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px; /* iOSでズームされない最適なサイズ */
+  border-radius: 8px;
+  border: 1px solid #C6C6C8;
+  background-color: #FAFAFA;
+  box-sizing: border-box;
+  margin-top: 4px;
+  font-family: inherit;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #007AFF; /* フォーカス時はApple Blue */
+}
+
+form div {
+  margin-bottom: 14px;
+}
+
+/* --- ボタンデザイン --- */
+button[type="submit"], .settings-screen button {
+  width: 100%;
+  padding: 14px !important;
+  font-size: 17px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  border: none !important;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+button[type="submit"]:active, .settings-screen button:active {
+  opacity: 0.7; /* タップした瞬間のフィードバック */
+}
+
+/* --- 履歴一覧のiOS風リスト --- */
+.history-screen div > div {
+  background-color: #FFFFFF;
+  padding: 14px 16px !important;
+  border-bottom: 1px solid #E5E5EA !important;
+}
+
+.history-screen div > div:first-child {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+}
+
+.history-screen div > div:last-child {
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  border-bottom: none !important;
+}
+
+/* --- 🌟 iOS純正アプリ風の半透明すりガラス下部ナビゲーション --- */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  height: 65px;
+  background-color: rgba(249, 249, 249, 0.85); /* 半透明の白 */
+  backdrop-filter: blur(20px); /* すりガラスエフェクト */
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 0.5px solid #A7A7AA;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding-bottom: 10px; /* iPhoneの下部バー用の余白 */
+  box-sizing: border-box;
+  z-index: 999;
+}
+
+.bottom-nav button {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #8E8E93; /* 非アクティブ時のグレー */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  width: 20%;
+  font-family: inherit;
+}
+
+/* タップされたタブを目立たせる（本来はReact側で制御しますが、CSS単体でも自然になるよう調整） */
+.bottom-nav button:active {
+  color: #007AFF;
+}
