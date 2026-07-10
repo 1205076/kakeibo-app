@@ -24,9 +24,9 @@ function App() {
 
   const fetchData = () => {
     if (!currentUser) return;
-    fetch(`http://192.168.3.8:8000/api/wishlist?user=${currentUser}`).then(res => res.json()).then(data => setWishlist(data));
-    fetch(`http://192.168.3.8:8000/api/transactions?user=${currentUser}`).then(res => res.json()).then(data => setTransactions(data));
-    fetch(`http://192.168.3.8:8000/api/budgets?user=${currentUser}`).then(res => res.json()).then(data => setCategoryBudgets(data));
+    fetch(`https://kakeiboapphihana.pythonanywhere.com/api/wishlist?user=${currentUser}`).then(res => res.json()).then(data => setWishlist(data));
+    fetch(`https://kakeiboapphihana.pythonanywhere.com/api/transactions?user=${currentUser}`).then(res => res.json()).then(data => setTransactions(data));
+    fetch(`https://kakeiboapphihana.pythonanywhere.com/api/budgets?user=${currentUser}`).then(res => res.json()).then(data => setCategoryBudgets(data));
   };
 
   useEffect(() => {
@@ -40,7 +40,7 @@ function App() {
   // 🌟 ログイン・新規登録処理
   const handleAuth = (e) => {
     e.preventDefault();
-    fetch('http://192.168.3.8:8000/api/auth', {
+    fetch('https://kakeiboapphihana.pythonanywhere.com/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: authMode, username: usernameInput, password: passwordInput })
@@ -72,7 +72,7 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetch('http://192.168.3.8:8000/api/transactions', {
+    fetch('https://kakeiboapphihana.pythonanywhere.com/api/transactions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: currentUser, type, date, amount: Number(amount), category, memo })
@@ -80,11 +80,11 @@ function App() {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('削除しますか？')) fetch(`http://192.168.3.8:8000/api/transactions/${id}`, { method: 'DELETE' }).then(() => fetchData());
+    if (window.confirm('削除しますか？')) fetch(`https://kakeiboapphihana.pythonanywhere.com/api/transactions/${id}`, { method: 'DELETE' }).then(() => fetchData());
   };
 
   const handleSaveBudget = (cat, amt) => {
-    fetch('http://192.168.3.8:8000/api/budgets', {
+    fetch('https://kakeiboapphihana.pythonanywhere.com/api/budgets', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: currentUser, category: cat, amount: Number(amt) })
