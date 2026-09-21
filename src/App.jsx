@@ -138,24 +138,27 @@ function App() {
   const totalSavings = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category === '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
   const filteredTransactions = safeTransactions.filter(t => `${t?.category || ''} ${t?.memo || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase()));
 
-  // 🌟 共通の入力欄スタイル（スマホではみ出さないように maxWidth と minWidth を追加！）
+  // 🌟 スマホ（特にiPhone）のわがままな仕様を完全リセットする最強のスタイル
   const inputStyle = { 
     padding: '12px', 
     borderRadius: '8px', 
     border: '1px solid #ccc', 
     width: '100%', 
-    maxWidth: '100%', 
-    minWidth: 0, 
     boxSizing: 'border-box',
-    display: 'block'
+    fontSize: '16px', // 👈 スマホでタップした時のズームやレイアウト崩れを防ぐ
+    WebkitAppearance: 'none', // 👈 Safari特有のデザインを無効化
+    appearance: 'none', // 👈 ブラウザ標準のデザインを無効化
+    backgroundColor: '#fff',
+    display: 'block',
+    margin: 0
   };
 
   if (isLoginScreen) {
     return (
-      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F2F2F7' }}>
-        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '16px', width: '80%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+      <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F2F2F7', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '16px', width: '80%', maxWidth: '400px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{authMode === 'login' ? 'ログイン' : '新規アカウント作成'}</h2>
-          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
             <input type="text" placeholder="ユーザーID (例: haruhi)" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} required style={inputStyle} />
             <input type="password" placeholder="パスワード" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} required style={inputStyle} />
             <button type="submit" style={{ padding: '14px', backgroundColor: '#007AFF', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
@@ -175,7 +178,7 @@ function App() {
   const renderContent = () => {
     if (activeTab === 'home') {
       return (
-        <div className="home-screen">
+        <div className="home-screen" style={{ width: '100%', overflowX: 'hidden' }}>
           <h2 style={{ fontSize: '20px', color: '#666' }}>こんにちは、{currentUser}さん</h2>
           <h2>{today.getMonth() + 1}月の袋分け状況</h2>
           <div style={{ marginBottom: '20px' }}>
@@ -210,31 +213,33 @@ function App() {
     
     if (activeTab === 'add') {
       return (
-        <div className="add-screen" style={{ width: '100%', boxSizing: 'border-box' }}>
+        <div className="add-screen" style={{ width: '100%', overflowX: 'hidden' }}>
           <h2>支出・収入の追加</h2>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', width: '100%' }}>
             <button onClick={() => { setType('expense'); setCategory(safeCategories.length > 0 ? safeCategories[0].name : ''); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'expense' ? '#FF3B30' : '#ddd', color: type === 'expense' ? 'white' : 'black', borderRadius: '5px', border: 'none', fontWeight: 'bold' }}>支出</button>
             <button onClick={() => { setType('income'); setCategory('給与'); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'income' ? '#34C759' : '#ddd', color: type === 'income' ? 'white' : 'black', borderRadius: '5px', border: 'none', fontWeight: 'bold' }}>収入</button>
           </div>
           
-          {/* 🌟 フォーム全体もはみ出さないようにガードを固めました */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', boxSizing: 'border-box' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>日付</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={inputStyle} />
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
+            <div style={{ width: '100%' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666', display: 'block', marginBottom: '6px' }}>日付</label>
+              {/* 🌟 日付の入力欄が絶対にはみ出さないようにガード！ */}
+              <div style={{ width: '100%', overflow: 'hidden', borderRadius: '8px' }}>
+                <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={inputStyle} />
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>金額</label>
+            <div style={{ width: '100%' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666', display: 'block', marginBottom: '6px' }}>金額</label>
               <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required style={inputStyle} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>カテゴリ</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputStyle, backgroundColor: '#fff' }}>
+            <div style={{ width: '100%' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666', display: 'block', marginBottom: '6px' }}>カテゴリ</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} style={inputStyle}>
                 {type === 'expense' ? safeCategories.map(c => <option key={c.id || c.name} value={c.name}>{c.name}</option>) : <><option value="給与">給与</option><option value="お小遣い">お小遣い</option><option value="その他">その他</option></>}
               </select>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
-              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>メモ (任意)</label>
+            <div style={{ width: '100%' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666', display: 'block', marginBottom: '6px' }}>メモ (任意)</label>
               <input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} style={inputStyle} />
             </div>
             <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#007AFF', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold', marginTop: '10px' }}>登録する</button>
@@ -245,16 +250,16 @@ function App() {
 
     if (activeTab === 'history') {
       return (
-        <div className="history-screen">
+        <div className="history-screen" style={{ width: '100%', overflowX: 'hidden' }}>
           <h2 style={{ marginBottom: '15px' }}>全履歴</h2>
           <input 
             type="text" 
             placeholder="🔍 カテゴリやメモで検索..." 
             value={searchQuery} 
             onChange={(e) => setSearchQuery(e.target.value)} 
-            style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
+            style={{ ...inputStyle, marginBottom: '20px' }} 
           />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
             {filteredTransactions.map(t => (
               <div key={t.id} style={{ backgroundColor: '#fff', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ flex: 1, minWidth: 0, marginRight: '10px' }}>
@@ -281,7 +286,7 @@ function App() {
     
     if (activeTab === 'settings') {
       return (
-        <div className="settings-screen">
+        <div className="settings-screen" style={{ width: '100%', overflowX: 'hidden' }}>
           <h2>設定・袋分け</h2>
           
           <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
@@ -296,7 +301,7 @@ function App() {
                   type="number" 
                   defaultValue={safeBudgets[cat.name] || 0}
                   onBlur={(e) => handleSaveBudget(cat.name, e.target.value)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box', minWidth: 0 }}
+                  style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '8px' }}
                 />
                 <button onClick={() => handleDeleteCategory(cat.id, cat.name)} style={{ marginLeft: '10px', padding: '8px', backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   ✖️
@@ -310,7 +315,7 @@ function App() {
                 placeholder="新しいカテゴリ名" 
                 value={newCategoryName} 
                 onChange={(e) => setNewCategoryName(e.target.value)} 
-                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box', minWidth: 0 }}
+                style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '10px' }}
               />
               <button type="submit" style={{ padding: '10px 15px', backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', flexShrink: 0 }}>
                 追加
@@ -331,8 +336,8 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <div className="content-area">{renderContent()}</div>
+    <div className="app-container" style={{ overflowX: 'hidden' }}>
+      <div className="content-area" style={{ width: '100%', boxSizing: 'border-box' }}>{renderContent()}</div>
       <div className="bottom-nav">
         <button onClick={() => setActiveTab('home')}>🏠 ホーム</button>
         <button onClick={() => setActiveTab('add')}>➕ 追加</button>
