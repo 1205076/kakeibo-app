@@ -210,24 +210,44 @@ function App() {
               const budget = safeBudgets[cat.name] || 0;
               const spent = periodTransactions.filter(t => t?.type === 'expense' && t?.category === cat.name).reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
               
-              // 🌟 「残りの金額」を計算
               const remaining = budget - spent;
-              // 🌟 予算に対する「残りの割合」を計算（減っていくバー）
-              const percent = budget > 0 ? Math.max((remaining / budget) * 100, 0) : 0;
-              // 🌟 ペースラインの位置（残りの日数の割合）
-              const pacePercent = (1 - paceRatio) * 100;
+              const isOver = spent > budget;
+              const overAmount = spent - budget;
               
-              let barColor = '#34C759'; // 通常は緑
-              let trackColor = '#E5E5EA'; // 通常のグレー背景
+              let currentPercent = 0;
+              if (budget > 0) {
+                if (isOver) {
+                  currentPercent = 100; // 超過時はMAXに見せる
+                } else {
+                  currentPercent = (remaining / budget) * 100; // 現在の残高割合
+                }
+              }
+              
+              // 今あるべき残高の割合（目安ライン）
+              const targetPercent = (1 - paceRatio) * 100;
+              
+              // 🌟 閾値（15% ＝ 約4.5日分の先食い）
+              const dangerThreshold = 15;
+              
+              let barColor = '#34C759'; // 基本は緑
+              let trackColor = '#E5E5EA'; 
 
               if (budget > 0) {
-                if (spent >= budget) {
-                  // 🌟 使い切ったら、背景全体を赤く染める！
-                  trackColor = '#FFE5E5'; // ほんのり赤い背景
-                  barColor = 'transparent'; // 残りのバーは消える
-                } else if (spent > budget * paceRatio) {
-                  // 🌟 ペースをオーバーしたら、残りのバーが黄色になる
-                  barColor = '#FFCC00';
+                if (isOver) {
+                  // 予算を1円でもオーバーしたら全体が赤
+                  barColor = '#FF3B30';
+                  trackColor = '#FFE5E5';
+                } else if (spent === budget) {
+                  trackColor = '#FFE5E5';
+                } else {
+                  // 🌟 日数基準の判定ロジック
+                  if (currentPercent < targetPercent - dangerThreshold) {
+                    // 目安ラインより15%以上も残高が少ない ＝ 赤色（危険！）
+                    barColor = '#FF3B30';
+                  } else if (currentPercent < targetPercent) {
+                    // 目安ラインより少しでも残高が少ない ＝ 黄色（注意）
+                    barColor = '#FFCC00';
+                  }
                 }
               }
 
@@ -244,18 +264,19 @@ function App() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'flex-end' }}>
                     <span style={{ fontWeight: 'bold' }}>{cat.name}</span>
-                    {/* 🌟 右側の文字を「残 ¥〇〇 / ¥〇〇」に変更 */}
-                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: spent >= budget ? '#FF3B30' : '#333' }}>
-                      残 ¥{Math.max(remaining, 0).toLocaleString()} <span style={{fontSize: '12px', fontWeight: 'normal', color: '#999'}}>/ ¥{budget.toLocaleString()}</span>
+                    <span style={{ fontSize: '15px', fontWeight: 'bold', color: (isOver || spent === budget) ? '#FF3B30' : '#333' }}>
+                      {isOver ? `超過 ¥${overAmount.toLocaleString()}` : `残 ¥${remaining.toLocaleString()}`} 
+                      <span style={{fontSize: '12px', fontWeight: 'normal', color: '#999'}}>/ ¥{budget.toLocaleString()}</span>
                     </span>
                   </div>
                   
-                  {/* 🌟 減っていくバーとペースラインのデザイン */}
                   <div style={{ position: 'relative', width: '100%', height: '10px', backgroundColor: trackColor, borderRadius: '5px', transition: 'background-color 0.3s' }}>
-                    <div style={{ width: `${percent}%`, height: '100%', backgroundColor: barColor, borderRadius: '5px', transition: 'width 0.3s, background-color 0.3s' }}></div>
-                    {/* 予算が設定されている場合のみ黒いラインを表示 */}
-                    {budget > 0 && spent < budget && (
-                      <div style={{ position: 'absolute', top: '-2px', bottom: '-2px', left: `${pacePercent}%`, width: '2px', backgroundColor: '#333', borderRadius: '2px', zIndex: 10 }}></div>
+                    {/* 減っていくバー */}
+                    <div style={{ width: `${currentPercent}%`, height: '100%', backgroundColor: barColor, borderRadius: '5px', transition: 'width 0.3s, background-color 0.3s' }}></div>
+                    
+                    {/* 目安ライン（黒線） */}
+                    {budget > 0 && !isOver && spent !== budget && (
+                      <div style={{ position: 'absolute', top: '-2px', bottom: '-2px', left: `${targetPercent}%`, width: '2px', backgroundColor: '#333', borderRadius: '2px', zIndex: 10 }}></div>
                     )}
                   </div>
                 </div>
@@ -351,7 +372,6 @@ function App() {
         <div className="settings-screen" style={{ padding: '20px', paddingBottom: '80px', boxSizing: 'border-box' }}>
           <h2 style={{ textAlign: 'left', marginBottom: '20px' }}>設定・袋分け</h2>
 
-          {/* 🌟 締め日の設定（1〜31日まで自由に選択可能に！） */}
           <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
             <h3 style={{ marginTop: 0, textAlign: 'left' }}>締め日の設定</h3>
             <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
