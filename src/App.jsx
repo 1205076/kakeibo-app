@@ -22,8 +22,6 @@ function App() {
   const [category, setCategory] = useState('');
   const [memo, setMemo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // 🌟 私がうっかり消してしまっていた1行（これがないと設定タブがパニックを起こします）
   const [newCategoryName, setNewCategoryName] = useState('');
 
   const fetchData = () => {
@@ -140,14 +138,26 @@ function App() {
   const totalSavings = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category === '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
   const filteredTransactions = safeTransactions.filter(t => `${t?.category || ''} ${t?.memo || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase()));
 
+  // 🌟 共通の入力欄スタイル（スマホではみ出さないように maxWidth と minWidth を追加！）
+  const inputStyle = { 
+    padding: '12px', 
+    borderRadius: '8px', 
+    border: '1px solid #ccc', 
+    width: '100%', 
+    maxWidth: '100%', 
+    minWidth: 0, 
+    boxSizing: 'border-box',
+    display: 'block'
+  };
+
   if (isLoginScreen) {
     return (
       <div className="app-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#F2F2F7' }}>
         <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '16px', width: '80%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '20px' }}>{authMode === 'login' ? 'ログイン' : '新規アカウント作成'}</h2>
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <input type="text" placeholder="ユーザーID (例: haruhi)" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box', width: '100%' }} />
-            <input type="password" placeholder="パスワード" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box', width: '100%' }} />
+            <input type="text" placeholder="ユーザーID (例: haruhi)" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} required style={inputStyle} />
+            <input type="password" placeholder="パスワード" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} required style={inputStyle} />
             <button type="submit" style={{ padding: '14px', backgroundColor: '#007AFF', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
               {authMode === 'login' ? 'ログインする' : '登録する'}
             </button>
@@ -200,31 +210,32 @@ function App() {
     
     if (activeTab === 'add') {
       return (
-        <div className="add-screen">
+        <div className="add-screen" style={{ width: '100%', boxSizing: 'border-box' }}>
           <h2>支出・収入の追加</h2>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
             <button onClick={() => { setType('expense'); setCategory(safeCategories.length > 0 ? safeCategories[0].name : ''); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'expense' ? '#FF3B30' : '#ddd', color: type === 'expense' ? 'white' : 'black', borderRadius: '5px', border: 'none', fontWeight: 'bold' }}>支出</button>
             <button onClick={() => { setType('income'); setCategory('給与'); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'income' ? '#34C759' : '#ddd', color: type === 'income' ? 'white' : 'black', borderRadius: '5px', border: 'none', fontWeight: 'bold' }}>収入</button>
           </div>
           
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* 🌟 フォーム全体もはみ出さないようにガードを固めました */}
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>日付</label>
-              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={inputStyle} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>金額</label>
-              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required style={inputStyle} />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>カテゴリ</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box', backgroundColor: '#fff' }}>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ ...inputStyle, backgroundColor: '#fff' }}>
                 {type === 'expense' ? safeCategories.map(c => <option key={c.id || c.name} value={c.name}>{c.name}</option>) : <><option value="給与">給与</option><option value="お小遣い">お小遣い</option><option value="その他">その他</option></>}
               </select>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', boxSizing: 'border-box' }}>
               <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>メモ (任意)</label>
-              <input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+              <input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} style={inputStyle} />
             </div>
             <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#007AFF', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold', marginTop: '10px' }}>登録する</button>
           </form>
@@ -285,7 +296,7 @@ function App() {
                   type="number" 
                   defaultValue={safeBudgets[cat.name] || 0}
                   onBlur={(e) => handleSaveBudget(cat.name, e.target.value)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                  style={{ flex: 1, padding: '8px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box', minWidth: 0 }}
                 />
                 <button onClick={() => handleDeleteCategory(cat.id, cat.name)} style={{ marginLeft: '10px', padding: '8px', backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   ✖️
@@ -299,9 +310,9 @@ function App() {
                 placeholder="新しいカテゴリ名" 
                 value={newCategoryName} 
                 onChange={(e) => setNewCategoryName(e.target.value)} 
-                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+                style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box', minWidth: 0 }}
               />
-              <button type="submit" style={{ padding: '10px 15px', backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>
+              <button type="submit" style={{ padding: '10px 15px', backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', flexShrink: 0 }}>
                 追加
               </button>
             </form>
