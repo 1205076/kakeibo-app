@@ -22,8 +22,10 @@ function App() {
   const [category, setCategory] = useState('');
   const [memo, setMemo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // 🌟 私がうっかり消してしまっていた1行（これがないと設定タブがパニックを起こします）
+  const [newCategoryName, setNewCategoryName] = useState('');
 
-  // 🌟 エラーが起きても無視して進むように強化！
   const fetchData = () => {
     if (!currentUser) return;
     
@@ -125,7 +127,6 @@ function App() {
     }
   };
 
-  // 🌟 絶対にクラッシュしないための安全装置（?. を多様）
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
   const safeBudgets = categoryBudgets || {};
