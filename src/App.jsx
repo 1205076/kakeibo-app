@@ -22,6 +22,8 @@ function App() {
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [memo, setMemo] = useState('');
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   const fetchData = () => {
     if (!currentUser) return;
     fetch(`https://kakeiboapphihana.pythonanywhere.com/api/wishlist?user=${currentUser}`).then(res => res.json()).then(data => setWishlist(data));
@@ -99,6 +101,8 @@ function App() {
   const totalExpense = currentMonthTransactions.filter(t => t.type === 'expense' && t.category !== '定期式積立預金').reduce((sum, t) => sum + t.amount, 0);
   const totalSavings = currentMonthTransactions.filter(t => t.type === 'expense' && t.category === '定期式積立預金').reduce((sum, t) => sum + t.amount, 0);
 
+  const filteredTransactions = transactions.filter(t => `${t.category} ${t.memo}`.toLowerCase().includes(searchQuery.toLowerCase()));
+
   // 🌟 ログインしていない場合はログイン画面だけを表示！
   if (isLoginScreen) {
     return (
@@ -131,10 +135,9 @@ function App() {
           <div style={{ marginBottom: '20px' }}>
             {CATEGORIES.map(cat => {
               const budget = categoryBudgets[cat] || 0;
-              if (budget === 0) return null;
               const spent = currentMonthTransactions.filter(t => t.type === 'expense' && t.category === cat).reduce((sum, t) => sum + t.amount, 0);
-              const percent = Math.min((spent / budget) * 100, 100);
-              const isOver = spent > budget;
+              const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : (spent > 0 ? 100 : 0);
+              const isOver = budget > 0 ? spent > budget : spent > 0;
 
               return (
                 <div key={cat} style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '12px', marginBottom: '10px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -167,17 +170,26 @@ function App() {
             <button onClick={() => { setType('expense'); setCategory(CATEGORIES[0]); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'expense' ? '#FF3B30' : '#ddd', color: type === 'expense' ? 'white' : 'black', borderRadius: '5px', border: 'none' }}>支出</button>
             <button onClick={() => { setType('income'); setCategory('給与'); }} style={{ flex: 1, padding: '10px', backgroundColor: type === 'income' ? '#34C759' : '#ddd', color: type === 'income' ? 'white' : 'black', borderRadius: '5px', border: 'none' }}>収入</button>
           </div>
-          <form onSubmit={handleSubmit}>
-            <div><label>日付: </label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} required /></div>
-            <div><label>金額: </label><input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required /></div>
-            <div>
-              <label>カテゴリ: </label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>日付</label>
+              <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>金額</label>
+              <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} required style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>カテゴリ</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box', backgroundColor: '#fff' }}>
                 {type === 'expense' ? CATEGORIES.map(c => <option key={c} value={c}>{c}</option>) : <><option value="給与">給与</option><option value="お小遣い">お小遣い</option><option value="その他">その他</option></>}
               </select>
             </div>
-            <div><label>メモ: </label><input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} /></div>
-            <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#007AFF', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold' }}>登録する</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '14px', fontWeight: 'bold', color: '#666' }}>メモ (任意)</label>
+              <input type="text" value={memo} onChange={(e) => setMemo(e.target.value)} style={{ padding: '12px', borderRadius: '8px', border: '1px solid #ccc', width: '100%', boxSizing: 'border-box' }} />
+            </div>
+            <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#007AFF', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold', marginTop: '10px' }}>登録する</button>
           </form>
         </div>
       );
@@ -186,19 +198,37 @@ function App() {
     if (activeTab === 'history') {
       return (
         <div className="history-screen">
-          <h2>履歴</h2>
-          {transactions.map(t => (
-            <div key={t.id} style={{ borderBottom: '1px solid #eee', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontSize: '12px', color: '#666' }}>{t.date}</div>
-                <div style={{ fontWeight: 'bold' }}>{t.category} <span style={{ fontSize: '12px', color: '#888', marginLeft: '5px' }}>{t.memo}</span></div>
+          <h2 style={{ marginBottom: '15px' }}>全履歴</h2>
+          {/* 🌟 追加4: 今までの全履歴を絞り込める検索バー */}
+          <input 
+            type="text" 
+            placeholder="🔍 カテゴリやメモで検索..." 
+            value={searchQuery} 
+            onChange={(e) => setSearchQuery(e.target.value)} 
+            style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filteredTransactions.map(t => (
+              /* 🌟 追加5: 履歴の各行の文字サイズと幅を綺麗に揃えたよ！ */
+              <div key={t.id} style={{ backgroundColor: '#fff', padding: '12px 16px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ flex: 1, minWidth: 0, marginRight: '10px' }}>
+                  <div style={{ fontSize: '12px', color: '#8E8E93', marginBottom: '4px' }}>{t.date}</div>
+                  <div style={{ fontWeight: '600', fontSize: '15px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {t.category} 
+                    <span style={{ fontSize: '13px', color: '#8E8E93', marginLeft: '8px', fontWeight: 'normal' }}>{t.memo}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: t.type === 'income' ? '#34C759' : '#FF3B30', whiteSpace: 'nowrap' }}>
+                    {t.type === 'income' ? '+' : '-'}¥{t.amount.toLocaleString()}
+                  </div>
+                  <button onClick={() => handleDelete(t.id)} style={{ padding: '8px', backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    🗑️
+                  </button>
+                </div>
               </div>
-              <div style={{ fontWeight: 'bold', color: t.type === 'income' ? '#34C759' : '#FF3B30' }}>
-                {t.type === 'income' ? '+' : '-'}¥{t.amount.toLocaleString()}
-              </div>
-              <button onClick={() => handleDelete(t.id)} style={{ padding: '5px', background: 'transparent', border: 'none', color: '#ccc', cursor: 'pointer' }}>✖️</button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       );
     }
@@ -210,7 +240,7 @@ function App() {
           
           <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
             <h3 style={{ marginTop: 0 }}>袋分け予算の設定</h3>
-            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>カテゴリごとに今月の予算を入力。0円はホーム画面に表示されません。</p>
+            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>カテゴリごとに毎月の予算を入力してください。（一度設定するとずっと引き継がれます）</p>
             {CATEGORIES.map(cat => (
               <div key={cat} style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                 <label style={{ width: '120px', fontWeight: 'bold', fontSize: '14px' }}>{cat}</label>
@@ -219,13 +249,12 @@ function App() {
                   type="number" 
                   defaultValue={categoryBudgets[cat] || 0}
                   onBlur={(e) => handleSaveBudget(cat, e.target.value)}
-                  style={{ flex: 1, padding: '8px', borderRadius: '5px', border: '1px solid #ccc' }}
+                  style={{ flex: 1, padding: '8px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
                 />
               </div>
             ))}
           </div>
 
-          {/* 🌟 ログアウトボタン */}
           <div style={{ backgroundColor: '#fff', padding: '15px', borderRadius: '12px', textAlign: 'center' }}>
             <button 
               onClick={handleLogout} 
