@@ -15,6 +15,9 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [categoryBudgets, setCategoryBudgets] = useState({});
   const [categories, setCategories] = useState([]);
+  
+  // 🌟 追加：締め日のステート（0なら月末締め）
+  const [closingDay, setClosingDay] = useState(0);
 
   const [type, setType] = useState('expense');
   const [date, setDate] = useState('');
@@ -27,26 +30,25 @@ function App() {
   const fetchData = () => {
     if (!currentUser) return;
     
-    fetch(`${API_URL}/api/categories?user=${currentUser}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setCategories(data);
-          if (data.length > 0 && !category) setCategory(data[0].name);
-        }
-      }).catch(err => console.log("カテゴリ取得エラー:", err));
-
-    fetch(`${API_URL}/api/transactions?user=${currentUser}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setTransactions(data);
-      }).catch(err => console.log("履歴取得エラー:", err));
-
-    fetch(`${API_URL}/api/budgets?user=${currentUser}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && typeof data === 'object' && !Array.isArray(data)) setCategoryBudgets(data);
-      }).catch(err => console.log("予算取得エラー:", err));
+    // カテゴリ取得
+    fetch(`${API_URL}/api/categories?user=${currentUser}`).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) {
+        setCategories(data);
+        if (data.length > 0 && !category) setCategory(data[0].name);
+      }
+    });
+    // 履歴取得
+    fetch(`${API_URL}/api/transactions?user=${currentUser}`).then(res => res.json()).then(data => {
+      if (Array.isArray(data)) setTransactions(data);
+    });
+    // 予算取得
+    fetch(`${API_URL}/api/budgets?user=${currentUser}`).then(res => res.json()).then(data => {
+      if (data && !Array.isArray(data)) setCategoryBudgets(data);
+    });
+    // 🌟 締め日設定を取得
+    fetch(`${API_URL}/api/settings?user=${currentUser}`).then(res => res.json()).then(data => {
+      if (data && data.closing_day !== undefined) setClosingDay(data.closing_day);
+    });
   };
 
   useEffect(() => {
@@ -72,7 +74,7 @@ function App() {
           setAuthMode('login');
         }
       } else { alert(data.message); }
-    }).catch(() => alert("サーバーとの通信に失敗しました。"));
+    });
   };
 
   const handleLogout = () => {
@@ -80,9 +82,9 @@ function App() {
     setIsLoginScreen(true);
     localStorage.removeItem('logged_in_user');
     setTransactions([]);
-    setWishlist([]);
     setCategoryBudgets({});
     setCategories([]);
+    setClosingDay(0);
   };
 
   const handleSubmit = (e) => {
@@ -113,10 +115,7 @@ function App() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user: currentUser, name: newCategoryName })
-    }).then(() => {
-      setNewCategoryName('');
-      fetchData();
-    });
+    }).then(() => { setNewCategoryName(''); fetchData(); });
   };
 
   const handleDeleteCategory = (id, name) => {
@@ -125,42 +124,67 @@ function App() {
     }
   };
 
+  // 🌟 新しいAPI連携：締め日の保存
+  const handleSaveClosingDay = (day) => {
+    setClosingDay(Number(day));
+    fetch(`${API_URL}/api/settings`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: currentUser, closing_day: Number(day) })
+    });
+  };
+
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
   const safeCategories = Array.isArray(categories) ? categories : [];
   const safeBudgets = categoryBudgets || {};
-
-  const today = new Date();
-  const currentMonthString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-  
-  const currentMonthTransactions = safeTransactions.filter(t => t?.date?.startsWith(currentMonthString));
-  const totalIncome = currentMonthTransactions.filter(t => t?.type === 'income').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
-  const totalExpense = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category !== '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
-  const totalSavings = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category === '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
   const filteredTransactions = safeTransactions.filter(t => `${t?.category || ''} ${t?.memo || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase()));
 
-  // 🌟 ベースの入力欄スタイル
+  // 🌟 ここから「締め日」の複雑な日付計算
+  const d = new Date();
+  const currentDay = d.getDate();
+  let start, end;
+
+  if (closingDay === 0) { 
+    // 月末締め
+    start = new Date(d.getFullYear(), d.getMonth(), 1);
+    end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  } else {
+    // カスタム締め日（例：25日締めなら、前月26日〜今月25日）
+    if (currentDay <= closingDay) {
+      start = new Date(d.getFullYear(), d.getMonth() - 1, closingDay + 1);
+      end = new Date(d.getFullYear(), d.getMonth(), closingDay);
+    } else {
+      start = new Date(d.getFullYear(), d.getMonth(), closingDay + 1);
+      end = new Date(d.getFullYear(), d.getMonth() + 1, closingDay);
+    }
+  }
+
+  const formatDate = (dateObj) => {
+    return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+  };
+  const startStr = formatDate(start);
+  const endStr = formatDate(end);
+  
+  // 計算された期間の取引だけを絞り込む
+  const periodTransactions = safeTransactions.filter(t => t?.date >= startStr && t?.date <= endStr);
+  const totalIncome = periodTransactions.filter(t => t?.type === 'income').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
+  const totalExpense = periodTransactions.filter(t => t?.type === 'expense' && t?.category !== '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
+  const totalSavings = periodTransactions.filter(t => t?.type === 'expense' && t?.category === '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
+
+  // 🌟 ペースラインの計算用（全体の何%の日数が過ぎたか）
+  const totalDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const passedDays = Math.round((d.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const paceRatio = Math.min(Math.max(passedDays / totalDays, 0), 1);
+  const pacePercent = paceRatio * 100;
+
   const inputStyle = { 
-    padding: '14px', 
-    borderRadius: '10px', 
-    border: '1px solid #d1d1d6', 
-    width: '100%', 
-    boxSizing: 'border-box',
-    fontSize: '16px', 
-    WebkitAppearance: 'none', 
-    appearance: 'none', 
-    backgroundColor: '#fafafa',
-    display: 'block',
-    margin: 0,
-    color: '#333'
+    padding: '14px', borderRadius: '10px', border: '1px solid #d1d1d6', width: '100%', 
+    boxSizing: 'border-box', fontSize: '16px', WebkitAppearance: 'none', appearance: 'none', 
+    backgroundColor: '#fafafa', display: 'block', margin: 0, color: '#333'
   };
 
   const labelStyle = {
-    fontSize: '14px', 
-    fontWeight: 'bold', 
-    color: '#666', 
-    display: 'block', 
-    marginBottom: '8px',
-    textAlign: 'left'
+    fontSize: '14px', fontWeight: 'bold', color: '#666', display: 'block', marginBottom: '8px', textAlign: 'left'
   };
 
   if (isLoginScreen) {
@@ -190,22 +214,55 @@ function App() {
       return (
         <div className="home-screen" style={{ padding: '20px', paddingBottom: '80px' }}>
           <h2 style={{ fontSize: '20px', color: '#666', textAlign: 'left' }}>こんにちは、{currentUser}さん</h2>
-          <h2 style={{ textAlign: 'left', marginBottom: '20px' }}>{today.getMonth() + 1}月の袋分け状況</h2>
+          <p style={{ textAlign: 'left', fontWeight: 'bold', fontSize: '16px', marginBottom: '20px' }}>
+            {start.getMonth() + 1}月{start.getDate()}日 〜 {end.getMonth() + 1}月{end.getDate()}日の状況
+          </p>
           <div style={{ marginBottom: '20px' }}>
             {safeCategories.map(cat => {
               const budget = safeBudgets[cat.name] || 0;
-              const spent = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category === cat.name).reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
+              const spent = periodTransactions.filter(t => t?.type === 'expense' && t?.category === cat.name).reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
+              
               const percent = budget > 0 ? Math.min((spent / budget) * 100, 100) : (spent > 0 ? 100 : 0);
-              const isOver = budget > 0 ? spent > budget : spent > 0;
+              
+              // 🌟 警告カラーの判定（緑 → 黄色 → 赤）
+              const paceAmount = budget * paceRatio;
+              let barColor = '#34C759'; // 通常（緑）
+              if (budget > 0) {
+                if (spent >= budget) {
+                  barColor = '#FF3B30'; // 予算オーバー（赤）
+                } else if (spent > paceAmount) {
+                  barColor = '#FFCC00'; // 使いすぎペース（黄色）
+                }
+              }
 
               return (
-                <div key={cat.id || cat.name} style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div 
+                  key={cat.id || cat.name} 
+                  // 🌟 追加機能1：タップで記録画面へジャンプ！
+                  onClick={() => {
+                    setType('expense');
+                    setCategory(cat.name);
+                    
+                    // 今日の日付を自動セット
+                    const todayStr = formatDate(new Date());
+                    setDate(todayStr);
+                    
+                    setActiveTab('add');
+                  }}
+                  style={{ backgroundColor: '#fff', padding: '16px', borderRadius: '16px', marginBottom: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', cursor: 'pointer' }}
+                >
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span style={{ fontWeight: 'bold' }}>{cat.name}</span>
-                    <span style={{ fontSize: '14px', color: isOver ? '#FF3B30' : '#666' }}>¥{spent.toLocaleString()} / ¥{budget.toLocaleString()}</span>
+                    <span style={{ fontSize: '14px', color: barColor === '#FF3B30' ? '#FF3B30' : '#666' }}>¥{spent.toLocaleString()} / ¥{budget.toLocaleString()}</span>
                   </div>
-                  <div style={{ width: '100%', height: '10px', backgroundColor: '#E5E5EA', borderRadius: '5px', overflow: 'hidden' }}>
-                    <div style={{ width: `${percent}%`, height: '100%', backgroundColor: isOver ? '#FF3B30' : '#34C759', transition: 'width 0.3s' }}></div>
+                  
+                  {/* 🌟 予算バーとペースライン */}
+                  <div style={{ position: 'relative', width: '100%', height: '10px', backgroundColor: '#E5E5EA', borderRadius: '5px' }}>
+                    <div style={{ width: `${percent}%`, height: '100%', backgroundColor: barColor, borderRadius: '5px', transition: 'width 0.3s, background-color 0.3s' }}></div>
+                    {/* ペースを示す黒いライン */}
+                    {budget > 0 && (
+                      <div style={{ position: 'absolute', top: '-2px', bottom: '-2px', left: `${pacePercent}%`, width: '2px', backgroundColor: '#333', borderRadius: '2px', zIndex: 10 }}></div>
+                    )}
                   </div>
                 </div>
               );
@@ -213,8 +270,8 @@ function App() {
           </div>
 
           <div className="summary-box" style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-            <p style={{ color: '#34C759', fontWeight: 'bold', margin: '0 0 10px 0', textAlign: 'left' }}>今月の全収入: ¥{totalIncome.toLocaleString()}</p>
-            <p style={{ color: '#FF3B30', fontWeight: 'bold', margin: '0 0 10px 0', textAlign: 'left' }}>今月の全支出: ¥{totalExpense.toLocaleString()}</p>
+            <p style={{ color: '#34C759', fontWeight: 'bold', margin: '0 0 10px 0', textAlign: 'left' }}>今期間の収入: ¥{totalIncome.toLocaleString()}</p>
+            <p style={{ color: '#FF3B30', fontWeight: 'bold', margin: '0 0 10px 0', textAlign: 'left' }}>今期間の支出: ¥{totalExpense.toLocaleString()}</p>
             <h3 style={{ margin: '15px 0 0 0', borderTop: '1px solid #eee', paddingTop: '15px', textAlign: 'left' }}>残高: ¥{(totalIncome - totalExpense - totalSavings).toLocaleString()}</h3>
           </div>
         </div>
@@ -284,7 +341,6 @@ function App() {
                   <div style={{ fontWeight: 'bold', fontSize: '16px', color: t.type === 'income' ? '#34C759' : '#FF3B30', whiteSpace: 'nowrap' }}>
                     {t?.type === 'income' ? '+' : '-'}¥{Number(t.amount || 0).toLocaleString()}
                   </div>
-                  {/* 🌟 履歴のゴミ箱ボタンも巨大化しないようにサイズを固定！ */}
                   <button onClick={() => handleDelete(t.id)} style={{ width: '36px', height: '36px', padding: 0, backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: 0 }}>
                     🗑️
                   </button>
@@ -300,6 +356,22 @@ function App() {
       return (
         <div className="settings-screen" style={{ padding: '20px', paddingBottom: '80px', boxSizing: 'border-box' }}>
           <h2 style={{ textAlign: 'left', marginBottom: '20px' }}>設定・袋分け</h2>
+
+          {/* 🌟 追加：締め日の設定ブロック */}
+          <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+            <h3 style={{ marginTop: 0, textAlign: 'left' }}>締め日の設定</h3>
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <label style={{ width: '100px', fontWeight: 'bold', fontSize: '14px', textAlign: 'left', flexShrink: 0, margin: 0 }}>毎月の締め日</label>
+              <select value={closingDay} onChange={(e) => handleSaveClosingDay(e.target.value)} style={{ ...inputStyle, flex: 1, minWidth: '100px', padding: '10px' }}>
+                <option value="0">月末締め</option>
+                <option value="5">5日締め</option>
+                <option value="10">10日締め</option>
+                <option value="15">15日締め</option>
+                <option value="20">20日締め</option>
+                <option value="25">25日締め</option>
+              </select>
+            </div>
+          </div>
           
           <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
             <h3 style={{ marginTop: 0, textAlign: 'left' }}>カテゴリと予算の設定</h3>
@@ -315,7 +387,6 @@ function App() {
                   onBlur={(e) => handleSaveBudget(cat.name, e.target.value)}
                   style={{ ...inputStyle, flex: 1, width: 'auto', minWidth: '60px', padding: '10px' }}
                 />
-                {/* 🌟 バツボタンも絶対に巨大化しないように 40px に固定！ */}
                 <button onClick={() => handleDeleteCategory(cat.id, cat.name)} style={{ width: '40px', height: '40px', marginLeft: '10px', padding: 0, backgroundColor: '#F2F2F7', border: 'none', borderRadius: '10px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: 0 }}>
                   ✖️
                 </button>
@@ -330,7 +401,6 @@ function App() {
                 onChange={(e) => setNewCategoryName(e.target.value)} 
                 style={{ ...inputStyle, flex: 1, width: 'auto', minWidth: '100px', padding: '12px' }}
               />
-              {/* 🌟 諸悪の根源「追加ボタン」。幅を 80px に完全固定して暴走をストップ！ */}
               <button type="submit" style={{ width: '80px', height: '46px', padding: 0, backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', flexShrink: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 追加
               </button>
