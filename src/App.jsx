@@ -16,6 +16,9 @@ function App() {
   const [transactions, setTransactions] = useState([]);
   const [categoryBudgets, setCategoryBudgets] = useState({});
 
+  const [categories, setCategories] = useState([]);
+  const [newCategoryName, setCategoryName] = useState('');
+
   const [type, setType] = useState('expense');
   const [date, setDate] = useState('');
   const [amount, setAmount] = useState('');
@@ -26,6 +29,11 @@ function App() {
 
   const fetchData = () => {
     if (!currentUser) return;
+    fetch(`${API_URL}/api/categories?user=${currentUser}`).then(res => res.json()).then(data => {
+      setCategories(data);
+      if (data.length > 0 && !category) setCategory(data[0].name);
+    });
+
     fetch(`https://kakeiboapphihana.pythonanywhere.com/api/wishlist?user=${currentUser}`).then(res => res.json()).then(data => setWishlist(data));
     fetch(`https://kakeiboapphihana.pythonanywhere.com/api/transactions?user=${currentUser}`).then(res => res.json()).then(data => setTransactions(data));
     fetch(`https://kakeiboapphihana.pythonanywhere.com/api/budgets?user=${currentUser}`).then(res => res.json()).then(data => setCategoryBudgets(data));
