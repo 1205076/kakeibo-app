@@ -138,7 +138,7 @@ function App() {
   const totalSavings = currentMonthTransactions.filter(t => t?.type === 'expense' && t?.category === '定期式積立預金').reduce((sum, t) => sum + (Number(t?.amount) || 0), 0);
   const filteredTransactions = safeTransactions.filter(t => `${t?.category || ''} ${t?.memo || ''}`.toLowerCase().includes((searchQuery || '').toLowerCase()));
 
-  // 🌟 デザインの共通スタイル（はみ出さず、丸みのある美しいデザイン）
+  // 🌟 ベースの入力欄スタイル
   const inputStyle = { 
     padding: '14px', 
     borderRadius: '10px', 
@@ -160,7 +160,7 @@ function App() {
     color: '#666', 
     display: 'block', 
     marginBottom: '8px',
-    textAlign: 'left' // 🌟 ここで文字を確実に左揃えにする！
+    textAlign: 'left'
   };
 
   if (isLoginScreen) {
@@ -171,7 +171,7 @@ function App() {
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '100%' }}>
             <input type="text" placeholder="ユーザーID (例: haruhi)" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} required style={inputStyle} />
             <input type="password" placeholder="パスワード" value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} required style={inputStyle} />
-            <button type="submit" style={{ padding: '14px', backgroundColor: '#007AFF', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px' }}>
+            <button type="submit" style={{ width: '100%', padding: '14px', backgroundColor: '#007AFF', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px' }}>
               {authMode === 'login' ? 'ログインする' : '登録する'}
             </button>
           </form>
@@ -221,14 +221,13 @@ function App() {
       );
     }
     
-    // 🌟 追加タブ：完全に新しくデザインしたカード型レイアウト
     if (activeTab === 'add') {
       return (
         <div className="add-screen" style={{ padding: '20px', paddingBottom: '80px', boxSizing: 'border-box' }}>
           <h2 style={{ textAlign: 'left', marginBottom: '20px' }}>支出・収入の追加</h2>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', width: '100%' }}>
-            <button onClick={() => { setType('expense'); setCategory(safeCategories.length > 0 ? safeCategories[0].name : ''); }} style={{ flex: 1, padding: '12px', backgroundColor: type === 'expense' ? '#FF3B30' : '#E5E5EA', color: type === 'expense' ? 'white' : '#333', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '15px' }}>支出</button>
-            <button onClick={() => { setType('income'); setCategory('給与'); }} style={{ flex: 1, padding: '12px', backgroundColor: type === 'income' ? '#34C759' : '#E5E5EA', color: type === 'income' ? 'white' : '#333', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '15px' }}>収入</button>
+            <button onClick={() => { setType('expense'); setCategory(safeCategories.length > 0 ? safeCategories[0].name : ''); }} style={{ flex: 1, width: 'auto', padding: '12px', backgroundColor: type === 'expense' ? '#FF3B30' : '#E5E5EA', color: type === 'expense' ? 'white' : '#333', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '15px' }}>支出</button>
+            <button onClick={() => { setType('income'); setCategory('給与'); }} style={{ flex: 1, width: 'auto', padding: '12px', backgroundColor: type === 'income' ? '#34C759' : '#E5E5EA', color: type === 'income' ? 'white' : '#333', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '15px' }}>収入</button>
           </div>
           
           <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
@@ -285,7 +284,8 @@ function App() {
                   <div style={{ fontWeight: 'bold', fontSize: '16px', color: t.type === 'income' ? '#34C759' : '#FF3B30', whiteSpace: 'nowrap' }}>
                     {t?.type === 'income' ? '+' : '-'}¥{Number(t.amount || 0).toLocaleString()}
                   </div>
-                  <button onClick={() => handleDelete(t.id)} style={{ padding: '8px', backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {/* 🌟 履歴のゴミ箱ボタンも巨大化しないようにサイズを固定！ */}
+                  <button onClick={() => handleDelete(t.id)} style={{ width: '36px', height: '36px', padding: 0, backgroundColor: '#F2F2F7', border: 'none', borderRadius: '8px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: 0 }}>
                     🗑️
                   </button>
                 </div>
@@ -307,29 +307,31 @@ function App() {
             
             {safeCategories.map(cat => (
               <div key={cat.id || cat.name} style={{ display: 'flex', alignItems: 'center', marginBottom: '12px', width: '100%' }}>
-                <label style={{ width: '110px', fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left' }}>{cat.name}</label>
-                <span style={{ margin: '0 5px', color: '#666' }}>¥</span>
+                <label style={{ width: '100px', fontWeight: 'bold', fontSize: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', flexShrink: 0, margin: 0 }}>{cat.name}</label>
+                <span style={{ margin: '0 5px', color: '#666', flexShrink: 0 }}>¥</span>
                 <input 
                   type="number" 
                   defaultValue={safeBudgets[cat.name] || 0}
                   onBlur={(e) => handleSaveBudget(cat.name, e.target.value)}
-                  style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '10px' }}
+                  style={{ ...inputStyle, flex: 1, width: 'auto', minWidth: '60px', padding: '10px' }}
                 />
-                <button onClick={() => handleDeleteCategory(cat.id, cat.name)} style={{ marginLeft: '10px', padding: '10px', backgroundColor: '#F2F2F7', border: 'none', borderRadius: '10px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {/* 🌟 バツボタンも絶対に巨大化しないように 40px に固定！ */}
+                <button onClick={() => handleDeleteCategory(cat.id, cat.name)} style={{ width: '40px', height: '40px', marginLeft: '10px', padding: 0, backgroundColor: '#F2F2F7', border: 'none', borderRadius: '10px', color: '#FF3B30', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: 0 }}>
                   ✖️
                 </button>
               </div>
             ))}
 
-            <form onSubmit={handleAddCategory} style={{ display: 'flex', marginTop: '20px', gap: '10px', borderTop: '1px solid #eee', paddingTop: '20px', width: '100%' }}>
+            <form onSubmit={handleAddCategory} style={{ display: 'flex', alignItems: 'center', marginTop: '20px', gap: '10px', borderTop: '1px solid #eee', paddingTop: '20px', width: '100%' }}>
               <input 
                 type="text" 
                 placeholder="新しいカテゴリ名" 
                 value={newCategoryName} 
                 onChange={(e) => setNewCategoryName(e.target.value)} 
-                style={{ ...inputStyle, flex: 1, minWidth: 0, padding: '12px' }}
+                style={{ ...inputStyle, flex: 1, width: 'auto', minWidth: '100px', padding: '12px' }}
               />
-              <button type="submit" style={{ padding: '12px 16px', backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', flexShrink: 0 }}>
+              {/* 🌟 諸悪の根源「追加ボタン」。幅を 80px に完全固定して暴走をストップ！ */}
+              <button type="submit" style={{ width: '80px', height: '46px', padding: 0, backgroundColor: '#34C759', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '16px', flexShrink: 0, margin: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 追加
               </button>
             </form>
@@ -338,7 +340,7 @@ function App() {
           <div style={{ backgroundColor: '#fff', padding: '10px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
             <button 
               onClick={handleLogout} 
-              style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', color: '#FF3B30', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px' }}>
+              style={{ width: '100%', padding: '16px', backgroundColor: 'transparent', color: '#FF3B30', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', margin: 0 }}>
               ログアウトする
             </button>
           </div>
@@ -351,12 +353,11 @@ function App() {
     <div className="app-container" style={{ overflowX: 'hidden', backgroundColor: '#F2F2F7', minHeight: '100vh', margin: 0, padding: 0 }}>
       <div className="content-area" style={{ width: '100%', boxSizing: 'border-box' }}>{renderContent()}</div>
       
-      {/* 🌟 下のメニューバーも少しオシャレに固定 */}
       <div className="bottom-nav" style={{ position: 'fixed', bottom: 0, width: '100%', backgroundColor: '#fff', display: 'flex', justifyContent: 'space-around', padding: '10px 0 20px 0', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)', zIndex: 100 }}>
-        <button onClick={() => setActiveTab('home')} style={{ background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'home' ? '#007AFF' : '#999' }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>🏠</span>ホーム</button>
-        <button onClick={() => setActiveTab('add')} style={{ background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'add' ? '#007AFF' : '#999' }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>➕</span>追加</button>
-        <button onClick={() => setActiveTab('history')} style={{ background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'history' ? '#007AFF' : '#999' }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>📖</span>履歴</button>
-        <button onClick={() => setActiveTab('settings')} style={{ background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'settings' ? '#007AFF' : '#999' }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>⚙️</span>設定</button>
+        <button onClick={() => setActiveTab('home')} style={{ width: 'auto', background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'home' ? '#007AFF' : '#999', margin: 0 }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>🏠</span>ホーム</button>
+        <button onClick={() => setActiveTab('add')} style={{ width: 'auto', background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'add' ? '#007AFF' : '#999', margin: 0 }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>➕</span>追加</button>
+        <button onClick={() => setActiveTab('history')} style={{ width: 'auto', background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'history' ? '#007AFF' : '#999', margin: 0 }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>📖</span>履歴</button>
+        <button onClick={() => setActiveTab('settings')} style={{ width: 'auto', background: 'none', border: 'none', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', color: activeTab === 'settings' ? '#007AFF' : '#999', margin: 0 }}><span style={{ fontSize: '20px', marginBottom: '4px' }}>⚙️</span>設定</button>
       </div>
     </div>
   );
